@@ -84,6 +84,8 @@ header_type metadata_t {
         value2 : 32;
         result1 : 32;
         result2 : 32;
+        result3 : 32;
+        result4 : 32;
         index : 32;
         salu_flow : 8;
     }
@@ -153,21 +155,71 @@ blackbox stateful_alu salu1_exec2 {
     output_dst : mdata.result2;
 }
 
+register salu2 {
+    width : 32;
+    instance_count : MAX_SIZE;
+}
+
+//  if (condition) {
+//         salu1++;
+//         result3 = 1;
+//     } else {
+//         salu = 0;
+//         result3 = 0;
+//     }
+// }
+blackbox stateful_alu salu2_exec1 {
+    reg : salu2;
+    condition_lo : mdata.condition == 1;
+    update_lo_1_predicate : condition_lo;
+    update_lo_1_value : register_lo + 1;
+    update_lo_1_predicate : not condition_lo;
+    update_lo_1_value : 0;
+    update_hi_1_predicate : condition_lo;
+    update_hi_1_value : 1;
+    update_hi_1_predicate : not condition_lo;
+    update_hi_2_value : 0;
+    output_value : alu_hi;
+    output_dst : mdata.result3;
+}
+
+// result2 = salu1
+blackbox stateful_alu salu2_exec2 {
+    reg : salu2;
+    output_value : register_lo;
+    output_dst : mdata.result3;
+}
 action action_0x0_1 () {
     modify_field(mdata.result1, mdata.value1);
 }
 
 action action_0x0_2 () {
     add(mdata.result1, mdata.value1, mdata.value2);
+}
 
+action action_0x0_3 () {
+    subtract(mdata.result1, mdata.value1, mdata.value2);
+}
+
+action action_0x3_1 () {
+    modify_field(mdata.result4, mdata.value1);
+}
+
+action action_0x3_2 () {
+    add(mdata.result4, mdata.value1, mdata.value2);
+}
+
+action action_0x3_3 () {
+    subtract(mdata.result4, mdata.value1, mdata.value2);
 }
 
 action action_0x1_1 () {
     salu1_exec1.execute_stateful_alu(mdata.index);
 }
 
-action action_0x1_2 () {
-    salu1_exec2.execute_stateful_alu(mdata.index);
+
+action action_0x2_1 () {
+    salu2_exec1.execute_stateful_alu(mdata.index);
 }
 
 action nop () {
@@ -181,8 +233,9 @@ table table_0x0 {
         // Can be one or more of such PHV contents
     }
     actions {
-        action_0x0_1; // action1
-        action_0x0_2; // action2
+        action_0x0_1; // action1 - assignment
+        action_0x0_2; // action2 - add
+        action_0x0_3; // action3 - subtract
         nop;
     }
     default_action: nop;
@@ -206,21 +259,33 @@ table table_0x2 {
         // Can be one or more of such PHV contents
     }
     actions {
-        action_0x1_2; // action2 for SALU
+        action_0x2_1; // action2 for SALU
         nop;
     }
     default_action: nop;
 }
 
-
+table table_0x3 {
+    reads {
+        mdata.condition : exact; // This is to be filled by the compiler.
+        // Can be one or more of such PHV contents
+    }
+    actions {
+        action_0x3_1; // action1 - assignment
+        action_0x3_2; // action2 - add
+        action_0x3_3; // action3 - subtract
+        nop;
+    }
+    default_action: nop;
+}
 control ingress {
     // Stage 0
+    // 2 x 1 - 2 Stateless & 2 Stateful ALU, 1 Stage
     apply(table_0x0); // Stateless ALU
-    if (mdata.salu_flow == 1) {
-        apply(table_0x1); // Stateful  ALU
-    } else {
-        apply(table_0x2); // Stateful  ALU
-    }
+    apply(table_0x1); // Stateful  ALU
+    apply(table_0x2); // Stateful  ALU
+    apply(table_0x3); // Stateless ALU
+
     // Stage 1
     // To be similar to Stage 0
 }
