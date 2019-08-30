@@ -136,13 +136,14 @@ register salu1 {
 blackbox stateful_alu salu1_exec1 {
     reg : salu1;
     condition_lo : mdata.condition == 1;
+    condition_hi : mdata.condition == 1;
     update_lo_1_predicate : condition_lo;
     update_lo_1_value : register_lo + 1;
     update_lo_1_predicate : not condition_lo;
     update_lo_1_value : 0;
-    update_hi_1_predicate : condition_lo;
+    update_hi_1_predicate : condition_hi;
     update_hi_1_value : 1;
-    update_hi_1_predicate : not condition_lo;
+    update_hi_1_predicate : not condition_hi;
     update_hi_2_value : 0;
     output_value : alu_hi;
     output_dst : mdata.result2;
@@ -171,13 +172,14 @@ register salu2 {
 blackbox stateful_alu salu2_exec1 {
     reg : salu2;
     condition_lo : mdata.condition == 1;
+    condition_hi : mdata.condition == 1;
     update_lo_1_predicate : condition_lo;
     update_lo_1_value : register_lo + 1;
     update_lo_1_predicate : not condition_lo;
     update_lo_1_value : 0;
-    update_hi_1_predicate : condition_lo;
+    update_hi_1_predicate : condition_hi;
     update_hi_1_value : 1;
-    update_hi_1_predicate : not condition_lo;
+    update_hi_1_predicate : not condition_hi;
     update_hi_2_value : 0;
     output_value : alu_hi;
     output_dst : mdata.result3;
