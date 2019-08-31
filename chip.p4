@@ -82,6 +82,8 @@ header_type metadata_t {
         condition : 32;
         value1 : 32;
         value2 : 32;
+        value3 : 32;
+        value4 : 32;
         result1 : 32;
         result2 : 32;
         result3 : 32;
@@ -203,18 +205,203 @@ action action_0x0_3 () {
     subtract(mdata.result1, mdata.value1, mdata.value2);
 }
 
+action action_0x0_4 () {
+    //result1 = value1 & value2
+    bit_and(mdata.result1, mdata.value1, mdata.value2);
+}
+
+action action_0x0_5 () {
+    //result1 = ~value1 & value2
+    bit_andca(mdata.result1, mdata.value1, mdata.value2);
+}
+
+action action_0x0_6 () {
+    //result1 = value1 & ~value2
+    bit_andcb(mdata.result1, mdata.value1, mdata.value2);
+}
+
+action action_0x0_7 () {
+    //result1 = ~(value1 & value2)
+    bit_nand(mdata.result1, mdata.value1, mdata.value2);
+}
+
+action action_0x0_8 () {
+    //result1 = ~(value1 | value2)
+    bit_nor(mdata.result1, mdata.value1, mdata.value2);
+}
+
+action action_0x0_9 () {
+    //result1 = ~value1
+    bit_not(mdata.result1, mdata.value1);
+}
+
+action action_0x0_10 () {
+    //result1 = value1 | value2
+    bit_or(mdata.result1, mdata.value1, mdata.value2);
+}
+
+action action_0x0_11 () {
+    //result1 = ~value1 | value2
+    bit_orca(mdata.result1, mdata.value1, mdata.value2);
+}
+
+action action_0x0_12 () {
+    //result1 = value1 | ~value2
+    bit_orcb(mdata.result1, mdata.value1, mdata.value2);
+}
+
+action action_0x0_13 () {
+    //result1 = ~(value1 ^ value2)
+    bit_xnor(mdata.result1, mdata.value1, mdata.value2);
+}
+
+action action_0x0_14 () {
+    //result1 = value1 ^ value2
+    bit_xor(mdata.result1, mdata.value1, mdata.value2);
+}
+
+action action_0x0_15 () {
+    //result1 = max(value1, value2)
+    max(mdata.result1, mdata.value1, mdata.value2);
+}
+
+action action_0x0_16 () {
+    //result1 = min(value1, value2)
+    min(mdata.result1, mdata.value1, mdata.value2);
+}
+
+action action_0x0_17 () {
+    //result1 = value1 - value2
+    subtract(mdata.result1, mdata.value1, mdata.value2);
+}
+
+action action_0x0_18 () {
+    //result1 -= value1
+    subtract_from_field(mdata.result1, mdata.value1);
+}
+
+action action_0x0_19 () {
+    //result1 = value1 << value2(immediate value)
+    shift_left(mdata.result1, mdata.value1, 1);
+}
+
+action action_0x0_20 () {
+    //result1 = value1 >> value2(immediate value)
+    shift_right(mdata.result1, mdata.value1, 1);
+}
+
+action action_0x0_21 () {
+    // value1,value2 = value2,value1
+    swap(mdata.value1, mdata.value2);
+}
+
+// Action 0x3 for table 0x3
 action action_0x3_1 () {
-    modify_field(mdata.result4, mdata.value1);
+    //result4 =value1
+    modify_field(mdata.result4, mdata.value3);
 }
 
 action action_0x3_2 () {
-    add(mdata.result4, mdata.value1, mdata.value2);
+    //result4 = value1 + value2
+    add(mdata.result4, mdata.value3, mdata.value4);
 }
 
 action action_0x3_3 () {
-    subtract(mdata.result4, mdata.value1, mdata.value2);
+    //result4 +=value1
+    add_to_field(mdata.result4, mdata.value3);
 }
 
+action action_0x3_4 () {
+    //result4 = value1 & value2
+    bit_and(mdata.result4, mdata.value3, mdata.value4);
+}
+
+action action_0x3_5 () {
+    //result4 = ~value1 & value2
+    bit_andca(mdata.result4, mdata.value3, mdata.value4);
+}
+
+action action_0x3_6 () {
+    //result4 = value1 & ~value2
+    bit_andcb(mdata.result4, mdata.value3, mdata.value4);
+}
+
+action action_0x3_7 () {
+    //result4 = ~(value1 & value2)
+    bit_nand(mdata.result4, mdata.value3, mdata.value4);
+}
+
+action action_0x3_8 () {
+    //result4 = ~(value1 | value2)
+    bit_nor(mdata.result4, mdata.value3, mdata.value4);
+}
+
+action action_0x3_9 () {
+    //result4 = ~value1
+    bit_not(mdata.result4, mdata.value3);
+}
+
+action action_0x3_10 () {
+    //result4 = value1 | value2
+    bit_or(mdata.result4, mdata.value3, mdata.value4);
+}
+
+action action_0x3_11 () {
+    //result4 = ~value1 | value2
+    bit_orca(mdata.result4, mdata.value3, mdata.value4);
+}
+
+action action_0x3_12 () {
+    //result4 = value1 | ~value2
+    bit_orcb(mdata.result4, mdata.value3, mdata.value4);
+}
+
+action action_0x3_13 () {
+    //result4 = ~(value1 ^ value2)
+    bit_xnor(mdata.result4, mdata.value3, mdata.value4);
+}
+
+action action_0x3_14 () {
+    //result4 = value1 ^ value2
+    bit_xor(mdata.result4, mdata.value3, mdata.value4);
+}
+
+action action_0x3_15 () {
+    //result4 = max(value1, value2)
+    max(mdata.result4, mdata.value3, mdata.value4);
+}
+
+action action_0x3_16 () {
+    //result4 = min(value1, value2)
+    min(mdata.result4, mdata.value3, mdata.value4);
+}
+
+action action_0x3_17 () {
+    //result4 = value1 - value2
+    subtract(mdata.result4, mdata.value3, mdata.value4);
+}
+
+action action_0x3_18 () {
+    //result4 -= value1
+    subtract_from_field(mdata.result4, mdata.value3);
+}
+
+action action_0x3_19 () {
+    //result4 = value1 << value2(immediate value)
+    shift_left(mdata.result4, mdata.value3, 1);
+}
+
+action action_0x3_20 () {
+    //result4 = value1 >> value2(immediate value)
+    shift_right(mdata.result4, mdata.value3, 1);
+}
+
+action action_0x3_21 () {
+    // value1,value2 = value2,value1
+    swap(mdata.value3, mdata.value4);
+}
+
+// Stateful ALU Action
 action action_0x1_1 () {
     salu1_exec1.execute_stateful_alu(mdata.index);
 }
@@ -238,6 +425,24 @@ table table_0x0 {
         action_0x0_1; // action1 - assignment
         action_0x0_2; // action2 - add
         action_0x0_3; // action3 - subtract
+        action_0x0_4;
+        action_0x0_5;
+        action_0x0_6;
+        action_0x0_7;
+        action_0x0_8;
+        action_0x0_9;
+        action_0x0_10;
+        action_0x0_11;
+        action_0x0_12;
+        action_0x0_13;
+        action_0x0_14;
+        action_0x0_15;
+        action_0x0_16;
+        action_0x0_17;
+        action_0x0_18;
+        action_0x0_19;
+        action_0x0_20;
+        // action_0x0_21; // Swap has a problem now. TBFixed
         nop;
     }
     default_action: nop;
@@ -276,6 +481,24 @@ table table_0x3 {
         action_0x3_1; // action1 - assignment
         action_0x3_2; // action2 - add
         action_0x3_3; // action3 - subtract
+        action_0x3_4;
+        action_0x3_5;
+        action_0x3_6;
+        action_0x3_7;
+        action_0x3_8;
+        action_0x3_9;
+        action_0x3_10;
+        action_0x3_11;
+        action_0x3_12;
+        action_0x3_13;
+        action_0x3_14;
+        action_0x3_15;
+        action_0x3_16;
+        action_0x3_17;
+        action_0x3_18;
+        action_0x3_19;
+        action_0x3_20;
+        //action_0x3_21; // Swap has a problem now. TBFixed
         nop;
     }
     default_action: nop;
@@ -287,7 +510,6 @@ control ingress {
     apply(table_0x1); // Stateful  ALU
     apply(table_0x2); // Stateful  ALU
     apply(table_0x3); // Stateless ALU
-
     // Stage 1
     // To be similar to Stage 0
 }
