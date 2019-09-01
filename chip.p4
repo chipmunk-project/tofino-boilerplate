@@ -190,6 +190,12 @@ register salu2 {
     instance_count : MAX_SIZE;
 }
 
+// Can define as many blackboxes per stateful ALU and state variable.
+// Only one of them can execute per packet.
+// NG's question: Can update_lo_1_predicate and update_lo_2_predicate be arbitrary?
+// Or does one HAVE to be the negation of the other?
+// Pravein thinks it has to be negation.
+// IN general: probe the Tofino compiler to find out.
 //  if (condition) {
 //         salu1++;
 //         result3 = 1;
@@ -215,23 +221,32 @@ blackbox stateful_alu salu2_exec1 {
 }
 
 // result2 = salu1
+// Output operation from stateful ALU.
+// Hasn't been used anywhere.
+// register_lo is the original value of the register.
+// alu_lo (updated value).
 blackbox stateful_alu salu2_exec2 {
     reg : salu2;
     output_value : register_lo;
     output_dst : mdata.result3;
 }
+
+// Write into a PHV container or packet field
 action action_0x0_1 () {
     modify_field(mdata.result1, mdata.value1);
 }
 
+// Addition
 action action_0x0_2 () {
     add(mdata.result1, mdata.value1, mdata.value2);
 }
 
+// Subtraction
 action action_0x0_3 () {
     subtract(mdata.result1, mdata.value1, mdata.value2);
 }
 
+// Bit and
 action action_0x0_4 () {
     //result1 = value1 & value2
     bit_and(mdata.result1, mdata.value1, mdata.value2);
@@ -312,15 +327,18 @@ action action_0x0_19 () {
     shift_left(mdata.result1, mdata.value1, 1);
 }
 
-action action_0x0_20 () {
+action action_0x0_20 () { // action
     //result1 = value1 >> value2(immediate value)
-    shift_right(mdata.result1, mdata.value1, 1);
+    shift_right(mdata.result1, mdata.value1, 1); // primitive action
 }
 
 action action_0x0_21 () {
     // value1,value2 = value2,value1
     swap(mdata.value1, mdata.value2);
 }
+// 21 such stateless ALU operations.
+// Can't add any more primitive operations.
+// In a single action, only a single stateful ALU can be accessed.
 
 // Action 0x3 for table 0x3
 action action_0x3_1 () {
@@ -427,6 +445,8 @@ action action_0x3_21 () {
     // value1,value2 = value2,value1
     swap(mdata.value3, mdata.value4);
 }
+
+// The above is a copy of the 21 stateless ALU actions.
 
 // Stateful ALU Action
 action action_0x1_1 () {
