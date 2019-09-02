@@ -75,7 +75,7 @@ void init_bf_switchd() {
   int ret;
 	p4_pd_status_t status;
   install_dir = getenv("SDE_INSTALL");
-  sprintf(target_conf_file, "%s/share/p4/targets/tofino/snaprr_topo.conf", install_dir);
+  sprintf(target_conf_file, "%s/share/p4/targets/tofino/chip.conf", install_dir);
 
   /* Allocate memory to hold switchd configuration and state */
   if ((switchd_main_ctx = malloc(sizeof(bf_switchd_context_t))) == NULL) {
@@ -122,9 +122,11 @@ static bf_status_t switch_pktdriver_tx_complete(bf_dev_id_t device,
 bf_status_t rx_packet_callback (bf_dev_id_t dev_id, bf_pkt *pkt, void *cookie, bf_pkt_rx_ring_t rx_ring) {
   int i;
   p4_pd_dev_target_t p4_dev_tgt = {0, (uint16_t)PD_DEV_PIPE_ALL};
+  printf("Packet received:\n");
   for (i=0;i<pkt->pkt_size;i++) {
       printf("%X ", pkt->pkt_data[i]);
   }
+  printf("\n");
   bf_pkt_free(dev_id, pkt);
   return BF_SUCCESS;
 }
@@ -176,13 +178,15 @@ void udppkt_init () {
 bf_pkt_tx_ring_t tx_ring = BF_PKT_TX_RING_1;
 
 void* send_udp_packets(void *args) {
-  int sleep_time = 2000;
+  int sleep_time = 200000;
   bf_status_t stat;
   while (1) {
       stat = bf_pkt_tx(0, upkt, tx_ring, (void *)upkt);
       if (stat  != BF_SUCCESS) {
        printf("Failed to send packet, status=%s\n", bf_err_str(stat));
-      }
+     } else {
+       printf("Packet sent!\n");
+     }
       usleep(sleep_time);
   }
 }

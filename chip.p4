@@ -1,14 +1,13 @@
 /*
- * Chipmunk P4 Tofino Reference (This program passes the Tofino compiler. Haven't fed test packets yet.)
- * TODO: Need to add an input/output test harness. Input could be packet generator, output could be switch CPU port.
+ * Chipmunk P4 Tofino Reference
  */
-#include <tofino/intrinsic_metadata.p4>    // Parser metadata, ingress pipeline (where to queue, ingree port), egress pipeline (queue depth), etc.
-#include <tofino/constants.p4>             // Copied from previous uses of stateful ALU.
-#include "tofino/stateful_alu_blackbox.p4" // Stateful ALU blackbox definitions
-#include "tofino/lpf_blackbox.p4"          // Low-pass filter blackbox definitions (can be deleted)
+#include <tofino/intrinsic_metadata.p4>
+#include <tofino/constants.p4>
+#include "tofino/stateful_alu_blackbox.p4"
+#include "tofino/lpf_blackbox.p4"
 
 
-/* Declare Header */                       // Standard Ethernet Header
+/* Declare Header */
 header_type ethernet_t {
     fields {
         dstAddr : 48;
@@ -19,7 +18,7 @@ header_type ethernet_t {
 
 header ethernet_t ethernet;
 
-header_type ipv4_t {                   // Standard IPv4 header
+header_type ipv4_t {
     fields {
         version : 4;
         ihl : 4;
@@ -53,7 +52,7 @@ field_list ipv4_field_list {
     ipv4.dstAddr;
 }
 
-field_list_calculation ipv4_chksum_calc {            // Calculate checksum of IPv4 everytime we forward a packet.
+field_list_calculation ipv4_chksum_calc {
     input {
         ipv4_field_list;
     }
@@ -65,7 +64,7 @@ calculated_field ipv4.hdrChecksum {
     update ipv4_chksum_calc;
 }
 
-header_type udp_t { // 8 bytes                       // UDP header; Can also add TCP header if required later on. For now, we can only process UDP packets.
+header_type udp_t { // 8 bytes
     fields {
         srcPort : 16;
         dstPort : 16;
@@ -78,33 +77,27 @@ header udp_t udp;
 
 
 header_type metadata_t {
-  // Placeholder for all the stateless variables (variable definitions, results, etc.)
-  // These get loaded into the PHV. Lifetime is through the ingress and egress pipeline.
-  // Values are the inputs to the stateless ALUs.
-  // Results are the outputs to the stateless ALUs.
-  // We are putting the outputs and inputs of both stateless+stateful ALUs in metadata.
-  // We can also do this in header (header and metadata are almost synonymous.)
     fields {
         // Fill in Metadata with declarations
-        condition : 32;  // condition is a placeholder for condition for executing stateful and stateless ALU
-        value1 : 32;     // placeholder for inputs to stateless/stateful ALUs.
-        value2 : 32;     // Not restricted to reading from value1 and writing to result1
-        value3 : 32;     // All fields, whether in metadata or packet headers can be read/written to in the same uniform manner.
+        condition : 32;
+        value1 : 32;
+        value2 : 32;
+        value3 : 32;
         value4 : 32;
-        result1 : 32;    // placeholder for outputs to stateless/stateful ALUs.
+        result1 : 32;
         result2 : 32;
         result3 : 32;
-        result4 : 32;    // Can increase the number of values and results as desired. 4 results (2 stateful + 2 stateless ALUs).
-        index : 32;      // placeholder for array address of stateful ALU array (P4 register).
-        salu_flow : 8;   // can be ignored. Was used for control flow before.
+        result4 : 32;
+        index : 32;
+        salu_flow : 8;
     }
 }
 
-metadata metadata_t mdata; // declaration for metadata.
+metadata metadata_t mdata;
 
 /* Declare Parser */
-parser start { // keyword to start parsing
-	return select(current(96,16)){ // start from offset of 96 bits and retrieve 16 bytes to get Ethernet header.
+parser start {
+	return select(current(96,16)){
 		0x0800: parse_ethernet;
 	}
 }
@@ -113,40 +106,27 @@ parser parse_ethernet {
     extract(ethernet);
     return select(latest.etherType) {
         /** Fill Whatever ***/
-        0x0800     : parse_ipv4;       // IPv4 ethertype
+        0x0800     : parse_ipv4;
         default: ingress;
     }
 }
 parser parse_ipv4 {
     extract(ipv4);
     set_metadata(mdata.condition, 1); // This is used for executing a control flow.
-    set_metadata(mdata.index, 0);     // Set metadata in the parser before it hits ingress pipeline.
-    // Can use set_metadata in parser to create test inputs by calling set_metadata on the index and values.
-    // Can use this as a test input generator by using set_metadata with random values.
-    // Still need the packet generator to actually generate the packets themselves.
-    // Placeholder for adding UDP and TCP parsers as well.
+    set_metadata(mdata.index, 0);
     return ingress;
 }
 
-/** Registers (stateful variables) ***/
+/** Registers ***/
 #define MAX_SIZE 10
-// MAX SIZE is the maximum size of the array. For each stateful ALU, we can define the size of the stateful ALU.
-// MAX_SIZE of up to 100K is allowed. Limited by the size of the SRAM in a single stage.
-
 // Each register (Stateful ALU) can have many blackbox execution units.
 // However, all blackbox units that operate on a SALU must be placed on the same stage.
 // In most of my programs, I use two blackbox per SALU (one to update and other to read)
-// register corresponds to state group in the Chipmunk world.
 register salu1 {
-    width : 32; // 32 bit integers. Really 2 slices of 32 bits each.
-    instance_count : MAX_SIZE; // Can get up to 100 K pairs of 32 bit integers per stage.
-    // The P4 compiler will complain if it runs out of SRAM.
+    width : 32;
+    instance_count : MAX_SIZE;
 }
-// In a single match-action table, you can't have two actions in the same table that manipulate the same register.
-// Might affect the code that we generate, but doesn't seem to affect what the hardware can do itself.
-// Restriction: A P4 register can only be manipulated by one table per packet (no races).
 
-// Below is pseudocode for lines 159 through 171.
 //  if (condition) {
 //         salu1++;
 //         result2 = 1;
@@ -155,27 +135,20 @@ register salu1 {
 //         result2 = 0;
 //     }
 // }
-// Note: Pravein wrote a .alu spec for this stateful ALU in the Google DOc.
 blackbox stateful_alu salu1_exec1 {
-    reg : salu1;  // placeholder for which register/stateful variable
-    condition_lo : mdata.condition == 1; // 2 conditions: lo is the lower slice and hi is the higher slice.
+    reg : salu1;
+    condition_lo : mdata.condition == 1;
     condition_hi : mdata.condition == 1;
-    // Condition placeholder: {register|metadata} {==|<|>|>=|!=} {immediate operand}.
-    // metadata compared to metadata is not allowed.
-    // Simple conditions can be encoded right here. Complicated conditions can be moved to previous stateless ALUs.
-    update_lo_1_predicate : condition_lo; // Predicate format: {condition_lo|!condition_lo|condition_high|!condition_high}
-                                          // 166 is equivalent to line 150
-                                          // Usually had to either use condition_lo or condition_high, not both.
-    update_lo_1_value : register_lo + 1;  // salu1++
-    update_lo_2_predicate : not condition_lo; // Predicate format: {condition_lo|!condition_lo|condition_high|!condition_high}
-                                              // 
-    update_lo_2_value : 0;                // salu = 0
-    update_hi_1_predicate : condition_hi; // similarly for condition hi
+    update_lo_1_predicate : condition_lo;
+    update_lo_1_value : register_lo + 1;
+    update_lo_1_predicate : not condition_lo;
+    update_lo_1_value : 0;
+    update_hi_1_predicate : condition_hi;
     update_hi_1_value : 1;
-    update_hi_2_predicate : not condition_hi;
+    update_hi_1_predicate : not condition_hi;
     update_hi_2_value : 0;
-    output_value : alu_hi;                // Can only output of one of the two 32-bit slices. We choose to get alu hi here.
-    output_dst : mdata.result2;           // Stored in result 2 as the output.
+    output_value : alu_hi;
+    output_dst : mdata.result2;
 }
 
 // result2 = salu1
@@ -190,12 +163,6 @@ register salu2 {
     instance_count : MAX_SIZE;
 }
 
-// Can define as many blackboxes per stateful ALU and state variable.
-// Only one of them can execute per packet.
-// NG's question: Can update_lo_1_predicate and update_lo_2_predicate be arbitrary?
-// Or does one HAVE to be the negation of the other?
-// Pravein thinks it has to be negation.
-// IN general: probe the Tofino compiler to find out.
 //  if (condition) {
 //         salu1++;
 //         result3 = 1;
@@ -221,32 +188,23 @@ blackbox stateful_alu salu2_exec1 {
 }
 
 // result2 = salu1
-// Output operation from stateful ALU.
-// Hasn't been used anywhere.
-// register_lo is the original value of the register.
-// alu_lo (updated value).
 blackbox stateful_alu salu2_exec2 {
     reg : salu2;
     output_value : register_lo;
     output_dst : mdata.result3;
 }
-
-// Write into a PHV container or packet field
 action action_0x0_1 () {
     modify_field(mdata.result1, mdata.value1);
 }
 
-// Addition
 action action_0x0_2 () {
     add(mdata.result1, mdata.value1, mdata.value2);
 }
 
-// Subtraction
 action action_0x0_3 () {
     subtract(mdata.result1, mdata.value1, mdata.value2);
 }
 
-// Bit and
 action action_0x0_4 () {
     //result1 = value1 & value2
     bit_and(mdata.result1, mdata.value1, mdata.value2);
@@ -327,18 +285,15 @@ action action_0x0_19 () {
     shift_left(mdata.result1, mdata.value1, 1);
 }
 
-action action_0x0_20 () { // action
+action action_0x0_20 () {
     //result1 = value1 >> value2(immediate value)
-    shift_right(mdata.result1, mdata.value1, 1); // primitive action
+    shift_right(mdata.result1, mdata.value1, 1);
 }
 
 action action_0x0_21 () {
     // value1,value2 = value2,value1
     swap(mdata.value1, mdata.value2);
 }
-// 21 such stateless ALU operations.
-// Can't add any more primitive operations.
-// In a single action, only a single stateful ALU can be accessed.
 
 // Action 0x3 for table 0x3
 action action_0x3_1 () {
@@ -446,8 +401,6 @@ action action_0x3_21 () {
     swap(mdata.value3, mdata.value4);
 }
 
-// The above is a copy of the 21 stateless ALU actions.
-
 // Stateful ALU Action
 action action_0x1_1 () {
     salu1_exec1.execute_stateful_alu(mdata.index);
@@ -550,6 +503,22 @@ table table_0x3 {
     }
     default_action: nop;
 }
+
+action set_egr(egress_spec) {
+    modify_field(ig_intr_md_for_tm.ucast_egress_port, egress_spec);
+}
+
+table mac_forward {
+    reads {
+        ethernet.dstAddr : exact;
+    }
+    actions {
+        set_egr;
+        nop;
+    }
+    size:20;
+}
+
 control ingress {
     // Stage 0
     // 2 x 1 - 2 Stateless & 2 Stateful ALU, 1 Stage
@@ -559,6 +528,8 @@ control ingress {
     apply(table_0x3); // Stateless ALU
     // Stage 1
     // To be similar to Stage 0
+    // Mac Forwarding by default
+    apply(mac_forward);
 }
 
 control egress {
