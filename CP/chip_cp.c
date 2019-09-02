@@ -63,11 +63,13 @@ typedef struct __attribute__((__packed__)) udp_packet_t {
   uint8_t payload[16];
 } udp_packet;
 
+// Packet definitions
 udp_packet udp_pkt;
 size_t udp_pkt_sz  = sizeof(udp_packet);
 bf_pkt *upkt = NULL;
 uint8_t *udp_pkt_8;
 
+// bfswitchd initialization. Needed for all programs
 void init_bf_switchd() {
   bf_switchd_context_t *switchd_main_ctx = NULL;
   char *install_dir;
@@ -108,7 +110,7 @@ void init_tables() {
     system("bfshell -f commands-newtopo-tofino1.txt");
 }
 
-
+// This callback function needed for sending a packet. Does nothing
 static bf_status_t switch_pktdriver_tx_complete(bf_dev_id_t device,
                                                 bf_pkt_tx_ring_t tx_ring,
                                                 uint64_t tx_cookie,
@@ -119,6 +121,7 @@ static bf_status_t switch_pktdriver_tx_complete(bf_dev_id_t device,
   return 0;
 }
 
+// Packet is received from Port 192 (dataplane)
 bf_status_t rx_packet_callback (bf_dev_id_t dev_id, bf_pkt *pkt, void *cookie, bf_pkt_rx_ring_t rx_ring) {
   int i;
   p4_pd_dev_target_t p4_dev_tgt = {0, (uint16_t)PD_DEV_PIPE_ALL};
@@ -149,7 +152,7 @@ void switch_pktdriver_callback_register(bf_dev_id_t device) {
   }
 }
 
-
+// UDP packet initialization.
 void udppkt_init () {
   int i=0;
   if (bf_pkt_alloc(0, &upkt, udp_pkt_sz, BF_DMA_CPU_PKT_TRANSMIT_0) != 0) {
@@ -176,7 +179,7 @@ void udppkt_init () {
 }
 
 bf_pkt_tx_ring_t tx_ring = BF_PKT_TX_RING_1;
-
+// Send UDP packets regularly by injecting from Control Plane.
 void* send_udp_packets(void *args) {
   int sleep_time = 200000;
   bf_status_t stat;
@@ -198,16 +201,16 @@ int main (int argc, char **argv) {
   pthread_t udp_thread;
 
 	printf("Starting chip Control Plane Unit ..\n");
-
-	// Thread to monitor the Global Timestamp for wrap over, and increment Era
-
+  // Register TX & RX callback
 	switch_pktdriver_callback_register(0);
+  // UDP Packet initialization
   udppkt_init();
-
+  // Sleep to wait for ASIC to finish initialization before sending packet
   sleep(3);
+  // Now, send packets forever.
   pthread_create(&udp_thread, NULL, send_udp_packets, NULL);
 
-
+  // Never hit
 	pthread_join(udp_thread, NULL);
 	return 0;
 }
