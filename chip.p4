@@ -160,13 +160,19 @@ action set_egr(egress_spec) {
     modify_field(ig_intr_md_for_tm.ucast_egress_port, egress_spec);
 }
 
+action set_egr_default() {
+    modify_field(ig_intr_md_for_tm.ucast_egress_port, 192);
+}
+
 table mac_forward {
     reads {
         ethernet.dstAddr : exact;
     }
     actions {
         set_egr;
+        set_egr_default;
     }
+    default_action: set_egr_default;
     size:20;
 }
 
