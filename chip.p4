@@ -157,7 +157,6 @@ table table_0x1 {
     actions {
         action_0x1_1; // action1 for SALU
     }
-    default_action: action_0x1_1;
 }
 
 action set_egr(egress_spec) {
