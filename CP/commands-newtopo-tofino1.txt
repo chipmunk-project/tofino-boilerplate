@@ -1,6 +1,7 @@
 pd-chip
 
 pd mac_forward set_default_action set_egr_default
+pd table_0x1   set_default_action action_0x1_1
 
 end
 ucli
