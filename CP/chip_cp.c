@@ -32,7 +32,7 @@
 #include <pcap.h>
 #include <arpa/inet.h>
 
-#include <tofinopd/snaprr_topo/pd/pd.h>
+// #include <tofinopd/snaprr_topo/pd/pd.h>
 #include <tofino/pdfixed/pd_common.h>
 #include <tofino/pdfixed/pd_conn_mgr.h>
 
