@@ -49,8 +49,7 @@ typedef struct __attribute__((__packed__)) udp_packet_t {
   uint8_t version_ihl;
   uint8_t diffserv;
   uint16_t totalLen;
-  uint16_t identification;
-  uint16_t flags_fragoffset;
+  uint32_t identification;
   uint8_t ttl;
   uint8_t protocol;
   uint16_t ipchecksum;
@@ -125,11 +124,11 @@ static bf_status_t switch_pktdriver_tx_complete(bf_dev_id_t device,
 bf_status_t rx_packet_callback (bf_dev_id_t dev_id, bf_pkt *pkt, void *cookie, bf_pkt_rx_ring_t rx_ring) {
   int i;
   p4_pd_dev_target_t p4_dev_tgt = {0, (uint16_t)PD_DEV_PIPE_ALL};
-  printf("Packet received:\n");
+  printf("Packet received from data plane:\n");
   for (i=0;i<pkt->pkt_size;i++) {
       printf("%X ", pkt->pkt_data[i]);
   }
-  printf("\n");
+  printf("\n\n\n\n");
   bf_pkt_free(dev_id, pkt);
   return BF_SUCCESS;
 }
@@ -163,6 +162,7 @@ void udppkt_init () {
   memcpy(udp_pkt.dstAddr, dstAddr, 6);
   memcpy(udp_pkt.srcAddr, srcAddr, 6);
   udp_pkt.ethtype = htons(0x0800);
+  udp_pkt.identification = htonl(0xDEADFACE);
 
   udp_pkt_8 = (uint8_t *) malloc(udp_pkt_sz);
   memcpy(udp_pkt_8, &udp_pkt, udp_pkt_sz);
@@ -181,7 +181,7 @@ void udppkt_init () {
 bf_pkt_tx_ring_t tx_ring = BF_PKT_TX_RING_1;
 // Send UDP packets regularly by injecting from Control Plane.
 void* send_udp_packets(void *args) {
-  int sleep_time = 200000;
+  int sleep_time = 1000000;
   bf_status_t stat;
   while (1) {
       stat = bf_pkt_tx(0, upkt, tx_ring, (void *)upkt);
@@ -189,6 +189,11 @@ void* send_udp_packets(void *args) {
        printf("Failed to send packet, status=%s\n", bf_err_str(stat));
      } else {
        printf("Packet sent!\n");
+       int i = 0;
+       for (i=0;i<upkt->pkt_size;i++) {
+           printf("%X ", upkt->pkt_data[i]);
+       }
+       printf("\n\n\n");
      }
       usleep(sleep_time);
   }
