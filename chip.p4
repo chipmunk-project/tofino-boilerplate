@@ -150,6 +150,10 @@ action action_0x1_1 () {
 
 
 table table_0x1 {
+    reads {
+        mdata.index : exact;
+    }
+
     actions {
         action_0x1_1; // action1 for SALU
     }
