@@ -145,6 +145,7 @@ blackbox stateful_alu salu1_exec1 {
     update_hi_2_value : 0;
     output_value : alu_lo;
     output_dst : ipv4.identification;
+    initial_register_lo_value : 3;
 }
 
 // result2 = salu1
