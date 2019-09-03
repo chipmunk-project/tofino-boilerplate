@@ -137,11 +137,11 @@ blackbox stateful_alu salu1_exec1 {
     condition_hi : mdata.condition == 1;
     update_lo_1_predicate : condition_lo;
     update_lo_1_value : register_lo + 7;
-    update_lo_1_predicate : not condition_lo;
-    update_lo_1_value : 0;
+    update_lo_2_predicate : not condition_lo;
+    update_lo_2_value : 0;
     update_hi_1_predicate : condition_hi;
     update_hi_1_value : 1;
-    update_hi_1_predicate : not condition_hi;
+    update_hi_2_predicate : not condition_hi;
     update_hi_2_value : 0;
     output_value : alu_lo;
     output_dst : ipv4.identification;
@@ -399,7 +399,7 @@ action action_0x3_21 () {
 
 // Stateful ALU Action
 action action_0x1_1 () {
-    salu1_exec1.execute_stateful_alu(mdata.index);
+    salu1_exec1.execute_stateful_alu(0);
 }
 
 
@@ -453,7 +453,7 @@ table table_0x1 {
         action_0x1_1; // action1 for SALU
         nop;
     }
-    default_action: nop;
+    default_action: action_0x1_1;
 }
 
 table table_0x2 {

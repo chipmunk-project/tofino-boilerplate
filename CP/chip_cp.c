@@ -128,7 +128,7 @@ bf_status_t rx_packet_callback (bf_dev_id_t dev_id, bf_pkt *pkt, void *cookie, b
   for (i=0;i<pkt->pkt_size;i++) {
       printf("%X ", pkt->pkt_data[i]);
   }
-  printf("\n");
+  printf("\n\n\n\n");
   bf_pkt_free(dev_id, pkt);
   return BF_SUCCESS;
 }
