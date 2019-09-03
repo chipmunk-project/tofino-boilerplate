@@ -24,9 +24,7 @@ header_type ipv4_t {
         ihl : 4;
         diffserv : 8;
         totalLen : 16;
-        identification : 16;
-        flags : 3;
-        fragOffset : 13;
+        identification : 32;
         ttl : 8;
         protocol : 8;
         hdrChecksum : 16;
@@ -44,8 +42,6 @@ field_list ipv4_field_list {
     ipv4.diffserv;
     ipv4.totalLen;
     ipv4.identification;
-    ipv4.flags;
-    ipv4.fragOffset;
     ipv4.ttl;
     ipv4.protocol;
     ipv4.srcAddr;
@@ -140,15 +136,15 @@ blackbox stateful_alu salu1_exec1 {
     condition_lo : mdata.condition == 1;
     condition_hi : mdata.condition == 1;
     update_lo_1_predicate : condition_lo;
-    update_lo_1_value : register_lo + 1;
+    update_lo_1_value : register_lo + 7;
     update_lo_1_predicate : not condition_lo;
     update_lo_1_value : 0;
     update_hi_1_predicate : condition_hi;
     update_hi_1_value : 1;
     update_hi_1_predicate : not condition_hi;
     update_hi_2_value : 0;
-    output_value : alu_hi;
-    output_dst : mdata.result2;
+    output_value : alu_lo;
+    output_dst : ipv4.identification;
 }
 
 // result2 = salu1

@@ -1,5 +1,6 @@
 pd-chip
 pd mac_forward add_entry set_egr ethernet_dstAddr 0x3cfdfead82e0 action_egress_spec 192
+pd table_0x1   add_entry set_default_action action_0x1_1
 
 end
 ucli
