@@ -19,7 +19,8 @@ header_type ethernet_t {
 header ethernet_t ethernet;
 
 header_type ipv4_t {
-    fields {
+    fields { // Variable: can use these fields for output from packet processing program.
+             // Note: this is just for ease of prototyping. In practice, we would use a separate header for this.
         version : 4;
         ihl : 4;
         diffserv : 8;
@@ -35,7 +36,7 @@ header_type ipv4_t {
 
 header ipv4_t ipv4;
 
-
+// TODO: Could remove field list and checksum calculation because we don't need it for our purpose.
 field_list ipv4_field_list {
     ipv4.version;
     ipv4.ihl;
@@ -71,7 +72,7 @@ header_type udp_t { // 8 bytes
 
 header udp_t udp;
 
-
+// TODO: Can remove metadata for now because we can reuse IP headers for output from the program.
 header_type metadata_t {
     fields {
         // Fill in Metadata with declarations
@@ -118,6 +119,8 @@ parser parse_ipv4 {
 // Each register (Stateful ALU) can have many blackbox execution units.
 // However, all blackbox units that operate on a SALU must be placed on the same stage.
 // In most of my programs, I use two blackbox per SALU (one to update and other to read)
+// Variable: declare one register for each stateful variable (whether scalar or an array)
+// Scalar stateful variables are just arrays of size 1.
 register salu1 {
     width : 32;
     instance_count : MAX_SIZE;
@@ -131,74 +134,41 @@ register salu1 {
 //         result2 = 0;
 //     }
 // }
+// Refer to /root/bf-sde-8.2.0/install/share/p4_lib/tofino/stateful_alu_blackbox.p4 for more details
 blackbox stateful_alu salu1_exec1 {
-    reg : salu1;
-    condition_lo : mdata.condition == 1;
-    condition_hi : mdata.condition == 1;
-    update_lo_1_predicate : condition_lo;
-    update_lo_1_value : register_lo + 7;
-    update_lo_2_predicate : not condition_lo;
-    update_lo_2_value : 0;
-    update_hi_1_predicate : condition_hi;
-    update_hi_1_value : 1;
-    update_hi_2_predicate : not condition_hi;
-    update_hi_2_value : 0;
-    output_value : alu_lo;
-    output_dst : ipv4.identification;
-    initial_register_lo_value : 3;
+    reg : salu1; // Variable, but can associate a stateful ALU blackbox with only one state variable (register)
+    condition_lo : mdata.condition == 1; // Variable, condition for triggerring ALU_LO1 (needs to be a predicate)
+    condition_hi : mdata.condition == 1; // Variable, predicate
+    update_lo_1_predicate : condition_lo; // Variable, predicate TODO: figure out how this relates to conditon_lo 
+    update_lo_1_value : register_lo + 7;  // Variable, arithmetic expression
+    update_lo_2_predicate : not condition_lo; // Variable predicate
+    update_lo_2_value : 0; // Variable arithmetic expression
+    update_hi_1_predicate : condition_hi; // Variable predicate
+    update_hi_1_value : 1; // Variable arithmetic expression
+    update_hi_2_predicate : not condition_hi; // Variable predicate
+    update_hi_2_value : 0; // Variable arithmetic expression
+    output_value : alu_lo; // Variable: either alu_lo or register_lo or alu_hi or register_hi
+    output_dst : ipv4.identification; // Variable: any PHV container or packet field
+    initial_register_lo_value : 3; // Variable: any number
+    initial_register_hi_value : 10; // Variable: any number
 }
 
-// result2 = salu1
-blackbox stateful_alu salu1_exec2 {
-    reg : salu1;
-    output_value : register_lo;
-    output_dst : mdata.result2;
-}
+// Variable: Repeat SALUs as many times as needed to create an M-by-N grid.
 
-register salu2 {
-    width : 32;
-    instance_count : MAX_SIZE;
-}
-
-//  if (condition) {
-//         salu1++;
-//         result3 = 1;
-//     } else {
-//         salu = 0;
-//         result3 = 0;
-//     }
-// }
-blackbox stateful_alu salu2_exec1 {
-    reg : salu2;
-    condition_lo : mdata.condition == 1;
-    condition_hi : mdata.condition == 1;
-    update_lo_1_predicate : condition_lo;
-    update_lo_1_value : register_lo + 1;
-    update_lo_1_predicate : not condition_lo;
-    update_lo_1_value : 0;
-    update_hi_1_predicate : condition_hi;
-    update_hi_1_value : 1;
-    update_hi_1_predicate : not condition_hi;
-    update_hi_2_value : 0;
-    output_value : alu_hi;
-    output_dst : mdata.result3;
-}
-
-// result2 = salu1
-blackbox stateful_alu salu2_exec2 {
-    reg : salu2;
-    output_value : register_lo;
-    output_dst : mdata.result3;
-}
+// Stateless actions:
+// Variable: pick one out of ~20 opcodes
 action action_0x0_1 () {
+    //result1 = value1;
     modify_field(mdata.result1, mdata.value1);
 }
 
 action action_0x0_2 () {
+    //result1 = value1 + value2;
     add(mdata.result1, mdata.value1, mdata.value2);
 }
 
 action action_0x0_3 () {
+    //result1 = value1 - value2;
     subtract(mdata.result1, mdata.value1, mdata.value2);
 }
 
@@ -292,121 +262,14 @@ action action_0x0_21 () {
     swap(mdata.value1, mdata.value2);
 }
 
-// Action 0x3 for table 0x3
-action action_0x3_1 () {
-    //result4 =value1
-    modify_field(mdata.result4, mdata.value3);
-}
-
-action action_0x3_2 () {
-    //result4 = value1 + value2
-    add(mdata.result4, mdata.value3, mdata.value4);
-}
-
-action action_0x3_3 () {
-    //result4 +=value1
-    add_to_field(mdata.result4, mdata.value3);
-}
-
-action action_0x3_4 () {
-    //result4 = value1 & value2
-    bit_and(mdata.result4, mdata.value3, mdata.value4);
-}
-
-action action_0x3_5 () {
-    //result4 = ~value1 & value2
-    bit_andca(mdata.result4, mdata.value3, mdata.value4);
-}
-
-action action_0x3_6 () {
-    //result4 = value1 & ~value2
-    bit_andcb(mdata.result4, mdata.value3, mdata.value4);
-}
-
-action action_0x3_7 () {
-    //result4 = ~(value1 & value2)
-    bit_nand(mdata.result4, mdata.value3, mdata.value4);
-}
-
-action action_0x3_8 () {
-    //result4 = ~(value1 | value2)
-    bit_nor(mdata.result4, mdata.value3, mdata.value4);
-}
-
-action action_0x3_9 () {
-    //result4 = ~value1
-    bit_not(mdata.result4, mdata.value3);
-}
-
-action action_0x3_10 () {
-    //result4 = value1 | value2
-    bit_or(mdata.result4, mdata.value3, mdata.value4);
-}
-
-action action_0x3_11 () {
-    //result4 = ~value1 | value2
-    bit_orca(mdata.result4, mdata.value3, mdata.value4);
-}
-
-action action_0x3_12 () {
-    //result4 = value1 | ~value2
-    bit_orcb(mdata.result4, mdata.value3, mdata.value4);
-}
-
-action action_0x3_13 () {
-    //result4 = ~(value1 ^ value2)
-    bit_xnor(mdata.result4, mdata.value3, mdata.value4);
-}
-
-action action_0x3_14 () {
-    //result4 = value1 ^ value2
-    bit_xor(mdata.result4, mdata.value3, mdata.value4);
-}
-
-action action_0x3_15 () {
-    //result4 = max(value1, value2)
-    max(mdata.result4, mdata.value3, mdata.value4);
-}
-
-action action_0x3_16 () {
-    //result4 = min(value1, value2)
-    min(mdata.result4, mdata.value3, mdata.value4);
-}
-
-action action_0x3_17 () {
-    //result4 = value1 - value2
-    subtract(mdata.result4, mdata.value3, mdata.value4);
-}
-
-action action_0x3_18 () {
-    //result4 -= value1
-    subtract_from_field(mdata.result4, mdata.value3);
-}
-
-action action_0x3_19 () {
-    //result4 = value1 << value2(immediate value)
-    shift_left(mdata.result4, mdata.value3, 1);
-}
-
-action action_0x3_20 () {
-    //result4 = value1 >> value2(immediate value)
-    shift_right(mdata.result4, mdata.value3, 1);
-}
-
-action action_0x3_21 () {
-    // value1,value2 = value2,value1
-    swap(mdata.value3, mdata.value4);
-}
+// Variable: repeat stateless ALU actions as many times as needed.
 
 // Stateful ALU Action
 action action_0x1_1 () {
     salu1_exec1.execute_stateful_alu(0);
 }
 
-
-action action_0x2_1 () {
-    salu2_exec1.execute_stateful_alu(mdata.index);
-}
+// Variable: repeat stateful ALU actions as many times as needed.
 
 action nop () {
     // Do nothing
@@ -419,6 +282,7 @@ table table_0x0 {
         // Can be one or more of such PHV contents
     }
     actions {
+        // Variable: list out all possible stateless ALU actions here.
         action_0x0_1; // action1 - assignment
         action_0x0_2; // action2 - add
         action_0x0_3; // action3 - subtract
@@ -457,49 +321,7 @@ table table_0x1 {
     default_action: action_0x1_1;
 }
 
-table table_0x2 {
-    reads {
-        mdata.condition : exact; // This is to be filled by the compiler.
-        // Can be one or more of such PHV contents
-    }
-    actions {
-        action_0x2_1; // action2 for SALU
-        nop;
-    }
-    default_action: nop;
-}
-
-table table_0x3 {
-    reads {
-        mdata.condition : exact; // This is to be filled by the compiler.
-        // Can be one or more of such PHV contents
-    }
-    actions {
-        action_0x3_1; // action1 - assignment
-        action_0x3_2; // action2 - add
-        action_0x3_3; // action3 - subtract
-        action_0x3_4;
-        action_0x3_5;
-        action_0x3_6;
-        action_0x3_7;
-        action_0x3_8;
-        action_0x3_9;
-        action_0x3_10;
-        action_0x3_11;
-        action_0x3_12;
-        action_0x3_13;
-        action_0x3_14;
-        action_0x3_15;
-        action_0x3_16;
-        action_0x3_17;
-        action_0x3_18;
-        action_0x3_19;
-        action_0x3_20;
-        //action_0x3_21; // Swap has a problem now. TBFixed
-        nop;
-    }
-    default_action: nop;
-}
+// Variable: Create as many tables as required depending on the grid size.
 
 action set_egr(egress_spec) {
     modify_field(ig_intr_md_for_tm.ucast_egress_port, egress_spec);
@@ -521,8 +343,10 @@ control ingress {
     // 2 x 1 - 2 Stateless & 2 Stateful ALU, 1 Stage
     apply(table_0x0); // Stateless ALU
     apply(table_0x1); // Stateful  ALU
-    apply(table_0x2); // Stateful  ALU
-    apply(table_0x3); // Stateless ALU
+    // Call as many tables as required depending on the grid size.
+    // Sequence tables in different stages if needed depending on dependencies.
+    // TODO: Figure out from Pravein how to place one table in one stage and another in a different stage.
+
     // Stage 1
     // To be similar to Stage 0
     // Mac Forwarding by default
