@@ -76,6 +76,8 @@ action action_0x1_1 () {
 }
 
 // Stateful ALU table
+// (use pragmas to enforce table placement in certain stages)
+@pragma stage 0
 table table_0x1 {
     actions {
         action_0x1_1; // action1 for SALU
@@ -92,6 +94,7 @@ action action_0x0() {
 }
 
 // Stateless ALU table
+@pragma stage 0
 table table_0x0 {
     actions {
         action_0x0;
@@ -118,11 +121,10 @@ table mac_forward {
 control ingress {
     // Stage 0
     // 1 Stateless & 1 Stateful ALU
+    // Call as many tables as required depending on the grid size.
     apply(table_0x0); // Stateless ALU
     apply(table_0x1); // Stateful  ALU
-    // Call as many tables as required depending on the grid size.
-    // TODO: Figure out how to place one table in one stage and another in a different stage for dependencies.
-    // Mac Forwarding by default
+    // MAC Forwarding by default
     apply(mac_forward);
 }
 
