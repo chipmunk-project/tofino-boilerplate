@@ -31,37 +31,6 @@ header_type ipv4_t {
 
 header ipv4_t ipv4;
 
-header_type udp_t { // 8 bytes
-    fields {
-        srcPort : 16;
-        dstPort : 16;
-        hdr_length : 16;
-        checksum : 16;
-    }
-}
-
-header udp_t udp;
-
-// TODO: Can remove metadata for now because we can reuse IP headers for output from the program.
-header_type metadata_t {
-    fields {
-        // Fill in Metadata with declarations
-        condition : 32;
-        value1 : 32;
-        value2 : 32;
-        value3 : 32;
-        value4 : 32;
-        result1 : 32;
-        result2 : 32;
-        result3 : 32;
-        result4 : 32;
-        index : 32;
-        salu_flow : 8;
-    }
-}
-
-metadata metadata_t mdata;
-
 /* Declare Parser */
 parser start {
 	return select(current(96,16)){
@@ -79,36 +48,20 @@ parser parse_ethernet {
 }
 parser parse_ipv4 {
     extract(ipv4);
-    set_metadata(mdata.condition, 1); // This is used for executing a control flow.
-    set_metadata(mdata.index, 0);
     return ingress;
 }
 
 /** Registers ***/
 #define MAX_SIZE 10
-// Each register (Stateful ALU) can have many blackbox execution units.
-// However, all blackbox units that operate on a SALU must be placed on the same stage.
-// In most of my programs, I use two blackbox per SALU (one to update and other to read)
-// Variable: declare one register for each stateful variable (whether scalar or an array)
-// Scalar stateful variables are just arrays of size 1.
 register salu1 {
     width : 32;
-    instance_count : MAX_SIZE;
+    instance_count : MAX_SIZE; // TODO: Figure out what MAX_SIZE should be.
 }
 
-//  if (condition) {
-//         salu1++;
-//         result2 = 1;
-//     } else {
-//         salu = 0;
-//         result2 = 0;
-//     }
-// }
-// Refer to /root/bf-sde-8.2.0/install/share/p4_lib/tofino/stateful_alu_blackbox.p4 for more details
 blackbox stateful_alu salu1_exec1 {
     reg : salu1; // Variable, but can associate a stateful ALU blackbox with only one state variable (register)
-    condition_lo : mdata.condition == 1; // Variable, condition for triggerring ALU_LO1 (needs to be a predicate)
-    condition_hi : mdata.condition == 1; // Variable, predicate
+    condition_lo : 1 == 1; // Variable, condition for triggerring ALU_LO1 (needs to be a predicate)
+    condition_hi : 1 == 1; // Variable, predicate
     update_lo_1_predicate : condition_lo; // Variable, predicate TODO: figure out how this relates to conditon_lo 
     update_lo_1_value : register_lo + 7;  // Variable, arithmetic expression
     update_lo_2_predicate : not condition_lo; // Variable predicate
