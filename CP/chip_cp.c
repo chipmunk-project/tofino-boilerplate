@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <sched.h>
 #include <string.h>
+#include <signal.h>
 #include <time.h>
 #include <assert.h>
 #include <unistd.h>
@@ -65,6 +66,17 @@ udp_packet udp_pkt;
 size_t udp_pkt_sz  = sizeof(udp_packet);
 bf_pkt *upkt = NULL;
 uint8_t *udp_pkt_8;
+
+/* Signal Handler for SIGINT */
+void sigintHandler(int sig_num) 
+{ 
+    /* Reset handler to catch SIGINT next time. 
+       Refer http://en.cppreference.com/w/c/program/signal */
+    signal(SIGINT, sigintHandler); 
+    printf("\n Hello from sigint \n"); 
+    fflush(stdout);
+    exit(1); 
+}
 
 // bfswitchd initialization. Needed for all programs
 void init_bf_switchd() {
@@ -198,6 +210,7 @@ void* send_udp_packets(void *args) {
 }
 
 int main (int argc, char **argv) {
+  signal(SIGINT, sigintHandler);
 	init_bf_switchd();
 	init_tables();
 
