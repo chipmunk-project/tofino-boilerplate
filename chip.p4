@@ -46,10 +46,13 @@ parser parse_ipv4 {
 }
 
 /** Registers ***/
+// A P4 register corresponds 1-to-1 with a Domino state variable.
+// If the Domino state variable is a scalar, the instance_count of the register is 1.
+// If the Domino state variable is an array, the instance_count of the register is the size of the array.
 #define MAX_SIZE 10
 register salu1 {
     width : 32;
-    instance_count : MAX_SIZE; // TODO: Figure out what MAX_SIZE should be.
+    instance_count : MAX_SIZE;
 }
 
 blackbox stateful_alu salu1_exec1 {
@@ -73,6 +76,7 @@ blackbox stateful_alu salu1_exec1 {
 // Stateful ALU Action
 action action_0x1_1 () {
     salu1_exec1.execute_stateful_alu(0);
+    # Replace 0 with appropriate value for array-based registers.
 }
 
 // Stateful ALU table
