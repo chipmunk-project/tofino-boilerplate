@@ -85,11 +85,11 @@ void sigintHandler(int sig_num)
         printf("Packet %d\n", i);
         printf("Sent: ");
         for (j = 0; j < PKT_SIZE; j++) {
-            printf("%2X ", sent[i][j]);
+            printf("%02X ", sent[i][j]);
         }
         printf("\nRecv: ");
         for (j = 0; j < PKT_SIZE; j++) {
-            printf("%2X ", received[i][j]);
+            printf("%02X ", received[i][j]);
         }
         printf("\n");
     }
