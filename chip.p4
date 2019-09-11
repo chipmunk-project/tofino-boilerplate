@@ -49,9 +49,18 @@ parser parse_ipv4 {
 // A P4 register corresponds 1-to-1 with a Domino state variable.
 // If the Domino state variable is a scalar, the instance_count of the register is 1.
 // If the Domino state variable is an array, the instance_count of the register is the size of the array.
+
+// Note on paired configurations:
+// register_hi or register_lo can be 8, 16, or 32 bits wide each.  A register
+// can either be single (uses only one of register_hi/register_lo) or paired
+// (uses both).  The Tofino compiler decides whether register is single or
+// paired based on whether both register_hi and register_lo are used in the P4
+// code of blackbox stateful_alu, or whether only one of the two is used.
+// Instead of relying on the compiler's detection algorithm, we can force a
+// paired configuration by setting the register width to 64.
 #define MAX_SIZE 10
 register salu1 {
-    width : 32;
+    width : 64;
     instance_count : MAX_SIZE;
 }
 
@@ -64,12 +73,12 @@ blackbox stateful_alu salu1_exec1 {
     update_lo_2_predicate : not condition_lo; // Variable predicate
     update_lo_2_value : 0; // Variable arithmetic expression
     update_hi_1_predicate : condition_hi; // Variable predicate
-    update_hi_1_value : 1; // Variable arithmetic expression
+    update_hi_1_value : register_hi + 7; // Variable arithmetic expression
     update_hi_2_predicate : not condition_hi; // Variable predicate
     update_hi_2_value : 0; // Variable arithmetic expression
     output_value : alu_lo; // Variable: either alu_lo or register_lo or alu_hi or register_hi
     output_dst : ipv4.field5; // Variable: any PHV container or packet field
-    initial_register_lo_value : 3; // Variable: any number
+    initial_register_lo_value : 0xFFFFFFF1; // Variable: any number
     initial_register_hi_value : 10; // Variable: any number
 }
 
