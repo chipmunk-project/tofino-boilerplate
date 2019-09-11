@@ -41,7 +41,7 @@
 
 // Sent and received packets.
 #define NUM_PKTS 10
-#define PKT_SIZE 50
+#define PKT_SIZE 40
 uint8_t sent[NUM_PKTS][PKT_SIZE];
 uint8_t received[NUM_PKTS][PKT_SIZE];
 
@@ -79,7 +79,20 @@ void sigintHandler(int sig_num)
     /* Reset handler to catch SIGINT next time. 
        Refer http://en.cppreference.com/w/c/program/signal */
     signal(SIGINT, sigintHandler); 
-    printf("\n Hello from sigint \n"); 
+    printf("\n Caught sigint \n");
+    int i=0, j=0;
+    for (i = 0; i < NUM_PKTS; i++) {
+        printf("Packet %d\n", i);
+        printf("Sent: ");
+        for (j = 0; j < PKT_SIZE; j++) {
+            printf("%X ", sent[i][j]);
+        }
+        printf("\nRecv: ");
+        for (j = 0; j < PKT_SIZE; j++) {
+            printf("%X ", received[i][j]);
+        }
+        printf("\n");
+    }
     fflush(stdout);
     exit(1); 
 }
@@ -142,11 +155,9 @@ bf_status_t rx_packet_callback (bf_dev_id_t dev_id, bf_pkt *pkt, void *cookie, b
   p4_pd_dev_target_t p4_dev_tgt = {0, (uint16_t)PD_DEV_PIPE_ALL};
   static int rx_pkts = 0;
   rx_pkts++;
-  printf("Packet received:\n");
   for (i=0;i<PKT_SIZE;i++) {
-      printf("%X ", pkt->pkt_data[i]);
+      received[rx_pkts-1][i] = pkt->pkt_data[i];
   }
-  printf("\n\n\n\n");
   bf_pkt_free(dev_id, pkt);
   return BF_SUCCESS;
 }
@@ -199,7 +210,7 @@ void udppkt_init () {
 bf_pkt_tx_ring_t tx_ring = BF_PKT_TX_RING_1;
 // Send UDP packets regularly by injecting from Control Plane.
 void* send_udp_packets(void *args) {
-  int sleep_time = 1000000;
+  int sleep_time = 100000;
   bf_status_t stat;
   static int sent_pkts = 0;
   while (1) {
@@ -211,13 +222,11 @@ void* send_udp_packets(void *args) {
       if (stat  != BF_SUCCESS) {
        printf("Failed to send packet, status=%s\n", bf_err_str(stat));
      } else {
-       printf("Packet sent!\n");
        int i = 0;
        sent_pkts++;
        for (i=0;i<PKT_SIZE;i++) {
-           printf("%X ", upkt->pkt_data[i]);
+           sent[sent_pkts-1][i] = upkt->pkt_data[i];
        }
-       printf("\n\n\n");
      }
       usleep(sleep_time);
   }
