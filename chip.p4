@@ -22,7 +22,7 @@ header_type ipv4_t {
     fields { // Variable: can use these fields for output from packet processing program.
              // Note: this is just for ease of prototyping. In practice, we would use a separate header for this.
         field1 : 32;
-        identification : 32;
+        field2 : 32;
         ttl : 8;
         protocol : 8;
         hdrChecksum : 16;
@@ -36,7 +36,7 @@ header ipv4_t ipv4;
 // TODO: Could remove field list and checksum calculation because we don't need it for our purpose.
 field_list ipv4_field_list {
     ipv4.field1;
-    ipv4.identification;
+    ipv4.field2;
     ipv4.ttl;
     ipv4.protocol;
     ipv4.srcAddr;
@@ -142,7 +142,7 @@ blackbox stateful_alu salu1_exec1 {
     update_hi_2_predicate : not condition_hi; // Variable predicate
     update_hi_2_value : 0; // Variable arithmetic expression
     output_value : alu_lo; // Variable: either alu_lo or register_lo or alu_hi or register_hi
-    output_dst : ipv4.identification; // Variable: any PHV container or packet field
+    output_dst : ipv4.field2; // Variable: any PHV container or packet field
     initial_register_lo_value : 3; // Variable: any number
     initial_register_hi_value : 10; // Variable: any number
 }
