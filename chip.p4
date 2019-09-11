@@ -21,10 +21,7 @@ header ethernet_t ethernet;
 header_type ipv4_t {
     fields { // Variable: can use these fields for output from packet processing program.
              // Note: this is just for ease of prototyping. In practice, we would use a separate header for this.
-        version : 4;
-        ihl : 4;
-        diffserv : 8;
-        totalLen : 16;
+        field1 : 32;
         identification : 32;
         ttl : 8;
         protocol : 8;
@@ -38,10 +35,7 @@ header ipv4_t ipv4;
 
 // TODO: Could remove field list and checksum calculation because we don't need it for our purpose.
 field_list ipv4_field_list {
-    ipv4.version;
-    ipv4.ihl;
-    ipv4.diffserv;
-    ipv4.totalLen;
+    ipv4.field1;
     ipv4.identification;
     ipv4.ttl;
     ipv4.protocol;

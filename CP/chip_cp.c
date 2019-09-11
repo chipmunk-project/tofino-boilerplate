@@ -46,9 +46,7 @@ typedef struct __attribute__((__packed__)) udp_packet_t {
   uint8_t dstAddr[6];
   uint8_t srcAddr[6];
   uint16_t ethtype;
-  uint8_t version_ihl;
-  uint8_t diffserv;
-  uint16_t totalLen;
+  uint32_t field1;
   uint32_t identification;
   uint8_t ttl;
   uint8_t protocol;
