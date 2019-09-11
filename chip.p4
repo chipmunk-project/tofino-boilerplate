@@ -76,7 +76,7 @@ blackbox stateful_alu salu1_exec1 {
 // Stateful ALU Action
 action action_0x1_1 () {
     salu1_exec1.execute_stateful_alu(0);
-    # Replace 0 with appropriate value for array-based registers.
+    // Replace 0 with appropriate value for array-based registers.
 }
 
 // Stateful ALU table
