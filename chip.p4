@@ -1,11 +1,5 @@
-/*
- * Chipmunk P4 Tofino Reference
- */
 #include <tofino/intrinsic_metadata.p4>
-#include <tofino/constants.p4>
 #include "tofino/stateful_alu_blackbox.p4"
-#include "tofino/lpf_blackbox.p4"
-
 
 /* Declare Header */
 header_type ethernet_t {
@@ -76,27 +70,9 @@ blackbox stateful_alu salu1_exec1 {
     initial_register_hi_value : 10; // Variable: any number
 }
 
-// Variable: Repeat SALUs as many times as needed to create an M-by-N grid.
-
 // Stateful ALU Action
 action action_0x1_1 () {
     salu1_exec1.execute_stateful_alu(0);
-}
-
-// Stateless ALU action
-action action_assign() {
-    modify_field(ipv4.field1, 0xDEADFA11);
-    modify_field(ipv4.field2, 0xFACEFEED); 
-    modify_field(ipv4.field3, 0xDEADFEED);
-    modify_field(ipv4.field4, 0xCAFED00D);
-}
-
-// Stateless ALU table
-table table_0x0 {
-    actions {
-        action_assign;
-    }
-    default_action: action_assign;
 }
 
 // Stateful ALU table
@@ -107,12 +83,28 @@ table table_0x1 {
     default_action: action_0x1_1;
 }
 
-// Variable: Create as many tables as required depending on the grid size.
+// Stateless ALU action
+action action_0x0() {
+    modify_field(ipv4.field1, 0xDEADFA11);
+    modify_field(ipv4.field2, 0xFACEFEED); 
+    modify_field(ipv4.field3, 0xDEADFEED);
+    modify_field(ipv4.field4, 0xCAFED00D);
+}
 
+// Stateless ALU table
+table table_0x0 {
+    actions {
+        action_0x0;
+    }
+    default_action: action_0x0;
+}
+
+// Variable: Create as many stateful and stateless tables as required depending on the grid size.
+
+// Required: mac_forward table for forwarding to switch CPU.
 action set_egr(egress_spec) {
     modify_field(ig_intr_md_for_tm.ucast_egress_port, egress_spec);
 }
-
 table mac_forward {
     reads {
         ethernet.dstAddr : exact;
@@ -120,20 +112,16 @@ table mac_forward {
     actions {
         set_egr;
     }
-    size:20;
+    size:1;
 }
 
 control ingress {
     // Stage 0
-    // 2 x 1 - 2 Stateless & 2 Stateful ALU, 1 Stage
+    // 1 Stateless & 1 Stateful ALU
     apply(table_0x0); // Stateless ALU
     apply(table_0x1); // Stateful  ALU
     // Call as many tables as required depending on the grid size.
-    // Sequence tables in different stages if needed depending on dependencies.
-    // TODO: Figure out from Pravein how to place one table in one stage and another in a different stage.
-
-    // Stage 1
-    // To be similar to Stage 0
+    // TODO: Figure out how to place one table in one stage and another in a different stage for dependencies.
     // Mac Forwarding by default
     apply(mac_forward);
 }
