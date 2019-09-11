@@ -33,28 +33,6 @@ header_type ipv4_t {
 
 header ipv4_t ipv4;
 
-// TODO: Could remove field list and checksum calculation because we don't need it for our purpose.
-field_list ipv4_field_list {
-    ipv4.field1;
-    ipv4.field2;
-    ipv4.ttl;
-    ipv4.protocol;
-    ipv4.srcAddr;
-    ipv4.dstAddr;
-}
-
-field_list_calculation ipv4_chksum_calc {
-    input {
-        ipv4_field_list;
-    }
-    algorithm : csum16;
-    output_width: 16;
-}
-
-calculated_field ipv4.hdrChecksum {
-    update ipv4_chksum_calc;
-}
-
 header_type udp_t { // 8 bytes
     fields {
         srcPort : 16;
