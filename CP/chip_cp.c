@@ -39,6 +39,12 @@
 
 #define THRIFT_PORT_NUM 7777
 
+// Sent and received packets.
+#define NUM_PKTS 10
+#define PKT_SIZE 50
+uint8_t sent[NUM_PKTS][PKT_SIZE];
+uint8_t received[NUM_PKTS][PKT_SIZE];
+
 // Session Handle, initialized by bf_switchd
 p4_pd_sess_hdl_t sess_hdl;
 
@@ -134,8 +140,10 @@ static bf_status_t switch_pktdriver_tx_complete(bf_dev_id_t device,
 bf_status_t rx_packet_callback (bf_dev_id_t dev_id, bf_pkt *pkt, void *cookie, bf_pkt_rx_ring_t rx_ring) {
   int i;
   p4_pd_dev_target_t p4_dev_tgt = {0, (uint16_t)PD_DEV_PIPE_ALL};
+  static int rx_pkts = 0;
+  rx_pkts++;
   printf("Packet received:\n");
-  for (i=0;i<pkt->pkt_size;i++) {
+  for (i=0;i<PKT_SIZE;i++) {
       printf("%X ", pkt->pkt_data[i]);
   }
   printf("\n\n\n\n");
@@ -193,14 +201,20 @@ bf_pkt_tx_ring_t tx_ring = BF_PKT_TX_RING_1;
 void* send_udp_packets(void *args) {
   int sleep_time = 1000000;
   bf_status_t stat;
+  static int sent_pkts = 0;
   while (1) {
-      stat = bf_pkt_tx(0, upkt, tx_ring, (void *)upkt);
+      if (sent_pkts < NUM_PKTS) {
+        stat = bf_pkt_tx(0, upkt, tx_ring, (void *)upkt);
+      } else {
+        stat = BF_IO; // Some fail condition
+      }
       if (stat  != BF_SUCCESS) {
        printf("Failed to send packet, status=%s\n", bf_err_str(stat));
      } else {
        printf("Packet sent!\n");
        int i = 0;
-       for (i=0;i<upkt->pkt_size;i++) {
+       sent_pkts++;
+       for (i=0;i<PKT_SIZE;i++) {
            printf("%X ", upkt->pkt_data[i]);
        }
        printf("\n\n\n");
