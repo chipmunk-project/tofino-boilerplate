@@ -310,13 +310,8 @@ table table_0x0 {
 }
 
 table table_0x1 {
-    reads {
-        mdata.condition : exact; // This is to be filled by the compiler.
-        // Can be one or more of such PHV contents
-    }
     actions {
         action_0x1_1; // action1 for SALU
-        nop;
     }
     default_action: action_0x1_1;
 }
