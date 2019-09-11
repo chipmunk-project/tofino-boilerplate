@@ -132,7 +132,10 @@ action action_0x1_1 () {
 
 // Stateless ALU action
 action action_assign() {
-    modify_field(ipv4.field3, 0xDEADBEEF);
+    modify_field(ipv4.field1, 0xDEADFA11);
+    modify_field(ipv4.field2, 0xFACEFEED); 
+    modify_field(ipv4.field3, 0xDEADFEED);
+    modify_field(ipv4.field4, 0xCAFED00D);
 }
 
 // Stateless ALU table
