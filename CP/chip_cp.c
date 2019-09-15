@@ -211,16 +211,16 @@ void* send_udp_packets(void *args) {
         stat = bf_pkt_tx(0, upkt, tx_ring, (void *)upkt);
         if (stat  != BF_SUCCESS) {
             printf("Failed to send packet, status=%s\n", bf_err_str(stat));
+        } else {
+            int i = 0;
+            sent_pkts++;
+            for (i=0;i<PKT_SIZE;i++) {
+                sent[sent_pkts-1][i] = upkt->pkt_data[i];
+            }
+        }
       } else {
         printf("Finished sending 10 packets; press ctrl-c to see results.\n");
       }
-     } else {
-       int i = 0;
-       sent_pkts++;
-       for (i=0;i<PKT_SIZE;i++) {
-           sent[sent_pkts-1][i] = upkt->pkt_data[i];
-       }
-     }
       usleep(sleep_time);
   }
 }
