@@ -54,17 +54,10 @@ typedef struct __attribute__((__packed__)) udp_packet_t {
   uint8_t srcAddr[6];
   uint16_t ethtype;
   uint32_t field1;
-  uint32_t identification;
-  uint8_t ttl;
-  uint8_t protocol;
-  uint16_t ipchecksum;
-  uint32_t ipsrcAddr;
-  uint32_t ipdstAddr;
-  uint16_t srcPort;
-  uint16_t dstPort;
-  uint16_t len;
-  uint16_t udpchecksum;
-  uint8_t payload[16];
+  uint32_t field2;
+  uint32_t field3;
+  uint32_t field4;
+  uint32_t field5;
 } udp_packet;
 
 // Packet definitions
@@ -191,7 +184,7 @@ void udppkt_init () {
   memcpy(udp_pkt.dstAddr, dstAddr, 6);
   memcpy(udp_pkt.srcAddr, srcAddr, 6);
   udp_pkt.ethtype = htons(0x0800);
-  udp_pkt.identification = htonl(0xDEADFACE);
+  udp_pkt.field2 = htonl(0xDEADFACE);
 
   udp_pkt_8 = (uint8_t *) malloc(udp_pkt_sz);
   memcpy(udp_pkt_8, &udp_pkt, udp_pkt_sz);
