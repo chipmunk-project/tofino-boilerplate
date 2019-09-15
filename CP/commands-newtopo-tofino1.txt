@@ -1,4 +1,4 @@
-pd-chip
+pd-autogen
 pd mac_forward add_entry set_egr ethernet_dstAddr 0x3cfdfead82e0 action_egress_spec 192
 
 end

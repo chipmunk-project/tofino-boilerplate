@@ -98,7 +98,7 @@ void init_bf_switchd() {
   int ret;
 	p4_pd_status_t status;
   install_dir = getenv("SDE_INSTALL");
-  sprintf(target_conf_file, "%s/share/p4/targets/tofino/chip.conf", install_dir);
+  sprintf(target_conf_file, "%s/share/p4/targets/tofino/autogen.conf", install_dir);
 
   /* Allocate memory to hold switchd configuration and state */
   if ((switchd_main_ctx = malloc(sizeof(bf_switchd_context_t))) == NULL) {
