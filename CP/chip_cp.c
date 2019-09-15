@@ -232,7 +232,7 @@ int main (int argc, char **argv) {
 
   pthread_t udp_thread;
 
-	printf("Starting chip Control Plane Unit ..\n");
+	printf("Starting Control Plane Unit ..\n");
   // Register TX & RX callback
 	switch_pktdriver_callback_register(0);
   // UDP Packet initialization
