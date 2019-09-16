@@ -207,6 +207,7 @@ void* send_udp_packets(void *args) {
   int sleep_time = 100000;
   bf_status_t stat;
   static int sent_pkts = 0;
+  static bool finished = 0;
   while (1) {
       if (sent_pkts < NUM_PKTS) {
         stat = bf_pkt_tx(0, upkt, tx_ring, (void *)upkt);
@@ -220,7 +221,8 @@ void* send_udp_packets(void *args) {
             }
         }
       } else {
-        printf("Finished sending 10 packets; press ctrl-c to see results.\n");
+        if (finished == 0) printf("Finished sending 10 packets; press ctrl-c to see results.\n");
+        finished = 1;
       }
       usleep(sleep_time);
   }
