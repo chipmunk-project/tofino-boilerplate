@@ -187,6 +187,8 @@ void udppkt_init () {
   udp_pkt.field0 = htonl(0xCAFED00D);
   udp_pkt.field1 = htonl(0xDEADFACE);
   udp_pkt.field2 = htonl(0xDEADBEEF);
+  udp_pkt.field3 = htonl(0x87654321);
+  udp_pkt.field4 = htonl(0x12345678);
 
   udp_pkt_8 = (uint8_t *) malloc(udp_pkt_sz);
   memcpy(udp_pkt_8, &udp_pkt, udp_pkt_sz);
