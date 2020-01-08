@@ -104,7 +104,11 @@ void init_tables() {
 }
 
 void init_state() {
-    system("bfshell -f state_vals.txt"); 
+    system("bfshell -f state_vals_write.txt");
+}
+
+void read_state() {
+    system("bfshell -f state_vals_read.txt");
 }
 
 // This callback function needed for sending a packet. Does nothing
@@ -201,7 +205,7 @@ void* send_udp_packet(void *args) {
 
 int main (int argc, char **argv) {
   if (argc < 6) {
-    printf("Usage: %s field0 field1 field2 field3 field4\n", argv[0]);
+    printf("Usage: %s field0 field1 field2 field3 field4 [reg_0=x reg_1=y reg_2=z]\n", argv[0]);
     exit(1);
   }
   int field0 = atoi(argv[1]);
@@ -212,10 +216,19 @@ int main (int argc, char **argv) {
 
   init_bf_switchd();
   init_tables();
-  FILE* fp = fopen("state_vals.txt", "w");
+  FILE* fp = fopen("state_vals_write.txt", "w");
   if (fp) {
-    fprintf(fp, "pd-autogen\npd register_write reg_0 index 0 0\n");
-    fprintf(fp, "pd-autogen\npd register_write reg_1 index 0 0\n");
+    fprintf(fp, "pd-autogen\n");
+    if (argc >= 7) {
+      int i;
+      for (i = 6; i < argc; i++) {
+        int reg_id, reg_val;
+        printf("Received *******%s***\n", argv[i]);
+        sscanf(argv[i], "reg_%d=%d", &reg_id, &reg_val);
+        fprintf(fp, "pd register_write reg_%d index 0 f0 %d f1 %d\n", reg_id, reg_val, reg_val);
+      }
+    }
+    fprintf(fp, "exit\n");
     fclose(fp);
   }
   init_state();
@@ -231,6 +244,22 @@ int main (int argc, char **argv) {
   sleep(3);
   // Now, send 1 packet.
   pthread_create(&udp_thread, NULL, send_udp_packet, NULL);
+  // Read state
+  fp = fopen("state_vals_read.txt", "w");
+  if (fp) {
+    fprintf(fp, "pd-autogen\n");
+    if (argc >= 7) {
+      int i;
+      for (i = 6; i < argc; i++) {
+        int reg_id, reg_val;
+        sscanf(argv[i], "reg_%d=%d", &reg_id, &reg_val);
+        fprintf(fp, "pd register_read reg_%d index 0\n", reg_id);
+      }
+    }
+    fprintf(fp, "exit\n");
+    fclose(fp);
+  }
+  read_state();
 
   // Receive it
   pthread_join(udp_thread, NULL);
