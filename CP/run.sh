@@ -15,4 +15,4 @@ else
 fi
 
 source $setbash;
-make -f $makefile clean ; make -f $makefile; ./chip_cp
+make -f $makefile clean ; make -f $makefile; ./chip_cp $@

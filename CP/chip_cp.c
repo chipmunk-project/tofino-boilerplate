@@ -12,7 +12,6 @@
 #include <stdint.h>
 #include <sched.h>
 #include <string.h>
-#include <signal.h>
 #include <time.h>
 #include <assert.h>
 #include <unistd.h>
@@ -40,10 +39,7 @@
 #define THRIFT_PORT_NUM 7777
 
 // Sent and received packets.
-#define NUM_PKTS 10
 #define PKT_SIZE 40
-uint8_t sent[NUM_PKTS][PKT_SIZE];
-uint8_t received[NUM_PKTS][PKT_SIZE];
 
 // Session Handle, initialized by bf_switchd
 p4_pd_sess_hdl_t sess_hdl;
@@ -65,30 +61,6 @@ udp_packet udp_pkt;
 size_t udp_pkt_sz  = sizeof(udp_packet);
 bf_pkt *upkt = NULL;
 uint8_t *udp_pkt_8;
-
-/* Signal Handler for SIGINT */
-void sigintHandler(int sig_num) 
-{ 
-    /* Reset handler to catch SIGINT next time. 
-       Refer http://en.cppreference.com/w/c/program/signal */
-    signal(SIGINT, sigintHandler); 
-    printf("\n Caught sigint \n");
-    int i=0, j=0;
-    for (i = 0; i < NUM_PKTS; i++) {
-        printf("Packet %d\n", i);
-        printf("Sent: ");
-        for (j = 0; j < PKT_SIZE; j++) {
-            printf("%02X ", sent[i][j]);
-        }
-        printf("\nRecv: ");
-        for (j = 0; j < PKT_SIZE; j++) {
-            printf("%02X ", received[i][j]);
-        }
-        printf("\n");
-    }
-    fflush(stdout);
-    exit(1); 
-}
 
 // bfswitchd initialization. Needed for all programs
 void init_bf_switchd() {
@@ -131,6 +103,10 @@ void init_tables() {
     system("bfshell -f commands-newtopo-tofino1.txt");
 }
 
+void init_state() {
+    system("bfshell -f state_vals.txt"); 
+}
+
 // This callback function needed for sending a packet. Does nothing
 static bf_status_t switch_pktdriver_tx_complete(bf_dev_id_t device,
                                                 bf_pkt_tx_ring_t tx_ring,
@@ -146,11 +122,11 @@ static bf_status_t switch_pktdriver_tx_complete(bf_dev_id_t device,
 bf_status_t rx_packet_callback (bf_dev_id_t dev_id, bf_pkt *pkt, void *cookie, bf_pkt_rx_ring_t rx_ring) {
   int i;
   p4_pd_dev_target_t p4_dev_tgt = {0, (uint16_t)PD_DEV_PIPE_ALL};
-  static int rx_pkts = 0;
-  rx_pkts++;
+  printf("\nRecv: ");
   for (i=0;i<PKT_SIZE;i++) {
-      received[rx_pkts-1][i] = pkt->pkt_data[i];
+    printf("%02X ", pkt->pkt_data[i]);
   }
+  printf("\n");
   bf_pkt_free(dev_id, pkt);
   return BF_SUCCESS;
 }
@@ -174,7 +150,7 @@ void switch_pktdriver_callback_register(bf_dev_id_t device) {
 }
 
 // UDP packet initialization.
-void udppkt_init () {
+void udppkt_init (int field0, int field1, int field2, int field3, int field4) {
   int i=0;
   if (bf_pkt_alloc(0, &upkt, udp_pkt_sz, BF_DMA_CPU_PKT_TRANSMIT_0) != 0) {
     printf("Failed bf_pkt_alloc\n");
@@ -184,11 +160,11 @@ void udppkt_init () {
   memcpy(udp_pkt.dstAddr, dstAddr, 6);
   memcpy(udp_pkt.srcAddr, srcAddr, 6);
   udp_pkt.ethtype = htons(0x0800);
-  udp_pkt.field0 = htonl(0xCAFED00D);
-  udp_pkt.field1 = htonl(0xDEADFACE);
-  udp_pkt.field2 = htonl(0xDEADBEEF);
-  udp_pkt.field3 = htonl(0x87654321);
-  udp_pkt.field4 = htonl(0x12345678);
+  udp_pkt.field0 = htonl(field0);
+  udp_pkt.field1 = htonl(field1);
+  udp_pkt.field2 = htonl(field2);
+  udp_pkt.field3 = htonl(field3);
+  udp_pkt.field4 = htonl(field4);
 
   udp_pkt_8 = (uint8_t *) malloc(udp_pkt_sz);
   memcpy(udp_pkt_8, &udp_pkt, udp_pkt_sz);
@@ -205,50 +181,58 @@ void udppkt_init () {
 }
 
 bf_pkt_tx_ring_t tx_ring = BF_PKT_TX_RING_1;
-// Send UDP packets regularly by injecting from Control Plane.
-void* send_udp_packets(void *args) {
+// Send one UDP packet by injecting from Control Plane.
+void* send_udp_packet(void *args) {
   int sleep_time = 100000;
   bf_status_t stat;
-  static int sent_pkts = 0;
   static bool finished = 0;
-  while (1) {
-      if (sent_pkts < NUM_PKTS) {
-        stat = bf_pkt_tx(0, upkt, tx_ring, (void *)upkt);
-        if (stat  != BF_SUCCESS) {
-            printf("Failed to send packet, status=%s\n", bf_err_str(stat));
-        } else {
-            int i = 0;
-            sent_pkts++;
-            for (i=0;i<PKT_SIZE;i++) {
-                sent[sent_pkts-1][i] = upkt->pkt_data[i];
-            }
-        }
-      } else {
-        if (finished == 0) printf("Finished sending 10 packets; press ctrl-c to see results.\n");
-        finished = 1;
-      }
-      usleep(sleep_time);
+  stat = bf_pkt_tx(0, upkt, tx_ring, (void *)upkt);
+  if (stat  != BF_SUCCESS) {
+    printf("Failed to send packet, status=%s\n", bf_err_str(stat));
+  } else {
+    int i = 0;
+    printf("Sent: ");
+    for (i=0;i<PKT_SIZE;i++) {
+      printf("%02X ", upkt->pkt_data[i]);
+    }
   }
+  fflush(stdout);
 }
 
 int main (int argc, char **argv) {
-  signal(SIGINT, sigintHandler);
-	init_bf_switchd();
-	init_tables();
+  if (argc < 6) {
+    printf("Usage: %s field0 field1 field2 field3 field4\n", argv[0]);
+    exit(1);
+  }
+  int field0 = atoi(argv[1]);
+  int field1 = atoi(argv[2]);
+  int field2 = atoi(argv[3]);
+  int field3 = atoi(argv[4]);
+  int field4 = atoi(argv[5]);
+
+  init_bf_switchd();
+  init_tables();
+  FILE* fp = fopen("state_vals.txt", "w");
+  if (fp) {
+    fprintf(fp, "pd-autogen\npd register_write reg_0 index 0 0\n");
+    fprintf(fp, "pd-autogen\npd register_write reg_1 index 0 0\n");
+    fclose(fp);
+  }
+  init_state();
 
   pthread_t udp_thread;
 
-	printf("Starting Control Plane Unit ..\n");
+  printf("Starting Control Plane Unit ..\n");
   // Register TX & RX callback
-	switch_pktdriver_callback_register(0);
+  switch_pktdriver_callback_register(0);
   // UDP Packet initialization
-  udppkt_init();
+  udppkt_init(field0, field1, field2, field3, field4);
   // Sleep to wait for ASIC to finish initialization before sending packet
   sleep(3);
-  // Now, send packets forever.
-  pthread_create(&udp_thread, NULL, send_udp_packets, NULL);
+  // Now, send 1 packet.
+  pthread_create(&udp_thread, NULL, send_udp_packet, NULL);
 
-  // Never hit
-	pthread_join(udp_thread, NULL);
-	return 0;
+  // Receive it
+  pthread_join(udp_thread, NULL);
+  return 0;
 }
