@@ -125,10 +125,19 @@ static bf_status_t switch_pktdriver_tx_complete(bf_dev_id_t device,
 // Packet is received from Port 192 (dataplane)
 bf_status_t rx_packet_callback (bf_dev_id_t dev_id, bf_pkt *pkt, void *cookie, bf_pkt_rx_ring_t rx_ring) {
   int i;
+  int j;
   p4_pd_dev_target_t p4_dev_tgt = {0, (uint16_t)PD_DEV_PIPE_ALL};
   printf("\nRecv: ");
   for (i=0;i<PKT_SIZE;i++) {
     printf("%02X ", pkt->pkt_data[i]);
+  }
+  for (i=0;i<5;i++) {
+      printf("\nupdated_value of field_%d is: ", i);
+      uint32_t res = 0;
+      for (j=0;j<4;j++) {
+          res = res * 16 * 16 + pkt->pkt_data[i*4+14+j];
+      }
+      printf("%d", res);
   }
   printf("\n");
   bf_pkt_free(dev_id, pkt);
