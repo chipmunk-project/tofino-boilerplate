@@ -131,6 +131,7 @@ bf_status_t rx_packet_callback (bf_dev_id_t dev_id, bf_pkt *pkt, void *cookie, b
   for (i=0;i<PKT_SIZE;i++) {
     printf("%02X ", pkt->pkt_data[i]);
   }
+  // Print the updated value of packet fields
   for (i=0;i<5;i++) {
       printf("\nupdated_value of field_%d is: ", i);
       uint32_t res = 0;
@@ -214,7 +215,7 @@ void* send_udp_packet(void *args) {
 
 int main (int argc, char **argv) {
   if (argc < 6) {
-    printf("Usage: %s field0 field1 field2 field3 field4 [reg_0=x reg_1=y reg_2=z]\n", argv[0]);
+    printf("Usage: %s field0 field1 field2 field3 field4 [reg_0_register_value_f0=x1 reg_0_register_value_f1=x2 reg_1_register_value_f0=y1 reg_1_register_value_f1=y2 reg_2_register_value_f0=z1 reg_2_register_value_f1=z2]\n", argv[0]);
     exit(1);
   }
   int field0 = atoi(argv[1]);
@@ -230,11 +231,15 @@ int main (int argc, char **argv) {
     fprintf(fp, "pd-autogen\n");
     if (argc >= 7) {
       int i;
-      for (i = 6; i < argc; i++) {
-        int reg_id, reg_val;
+      for (i = 6; i < argc; i+=2) {
+        int reg_id0, reg_id1, reg_val_f0, reg_val_f1;
         printf("Received *******%s***\n", argv[i]);
-        sscanf(argv[i], "reg_%d=%d", &reg_id, &reg_val);
-        fprintf(fp, "pd register_write reg_%d index 0 f0 %d f1 %d\n", reg_id, reg_val, reg_val);
+        sscanf(argv[i], "reg_%d_register_value_f0=%d", &reg_id0, &reg_val_f0);
+        printf("Received *******%s***\n", argv[i + 1]);
+        sscanf(argv[i + 1], "reg_%d_register_value_f1=%d", &reg_id1, &reg_val_f1);
+        // Guarantee that reg_id0 and reg_id1 are the same value
+        assert(reg_id0 == reg_id1);
+        fprintf(fp, "pd register_write reg_%d index 0 f0 %d f1 %d\n", reg_id0, reg_val_f0, reg_val_f1);
       }
     }
     fprintf(fp, "exit\n");
@@ -259,10 +264,13 @@ int main (int argc, char **argv) {
     fprintf(fp, "pd-autogen\n");
     if (argc >= 7) {
       int i;
-      for (i = 6; i < argc; i++) {
-        int reg_id, reg_val;
-        sscanf(argv[i], "reg_%d=%d", &reg_id, &reg_val);
-        fprintf(fp, "pd register_read reg_%d index 0\n", reg_id);
+      for (i = 6; i < argc; i+=2) {
+        int reg_id0, reg_id1, reg_val_f0, reg_val_f1;
+        sscanf(argv[i], "reg_%d_register_value_f0=%d", &reg_id0, &reg_val_f0);
+        sscanf(argv[i], "reg_%d_register_value_f1=%d", &reg_id1, &reg_val_f1);
+        // Same as above, reg_id0 and reg_id1 should be the same
+        assert(reg_id0 == reg_id1);
+        fprintf(fp, "pd register_read reg_%d index 0 f0 %d f1 %d\n", reg_id0, reg_val_f0, reg_val_f1);
       }
     }
     fprintf(fp, "exit\n");
